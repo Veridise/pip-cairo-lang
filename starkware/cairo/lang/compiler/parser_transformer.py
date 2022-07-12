@@ -22,6 +22,10 @@ from starkware.cairo.lang.compiler.ast.code_elements import (
     CodeBlock,
     CodeElementAllocLocals,
     CodeElementCompoundAssertEq,
+    CodeElementCompoundVerifyEq,
+    CodeElementCompoundVerifyGeq,
+    CodeElementCompoundVerifyNeq,
+    CodeElementCompoundVerifyLt,
     CodeElementConst,
     CodeElementDirective,
     CodeElementEmptyLine,
@@ -434,8 +438,6 @@ class ParserTransformer(Transformer):
     def bool_and_expr(self, meta, a: BoolExpr, notes: Notes, b: BoolEqExpr):
         return BoolAndExpr(a=a, b=b, notes=notes, location=self.meta2loc(meta))
 
-    # Types.
-
     @v_args(meta=True)
     def modifier_local(self, meta, value):
         return Modifier(name="local", location=self.meta2loc(meta))
@@ -462,6 +464,21 @@ class ParserTransformer(Transformer):
     @v_args(meta=True)
     def code_element_compound_assert_eq(self, meta, value):
         return CodeElementCompoundAssertEq(a=value[0], b=value[1], location=self.meta2loc(meta))
+
+    def code_element_verify_lt(self, value, meta):
+        return CodeElementCompoundVerifyLt(a=value[0], b=value[1], location=self.meta2loc(meta))
+
+    @v_args(meta=True)
+    def code_element_verify_geq(self, value, meta):
+        return CodeElementCompoundVerifyGeq(a=value[0], b=value[1], location=self.meta2loc(meta))
+
+    @v_args(meta=True)
+    def code_element_verify_eq(self, value, meta):
+        return CodeElementCompoundVerifyEq(a=value[0], b=value[1], location=self.meta2loc(meta))
+
+    @v_args(meta=True)
+    def code_element_verify_neq(self, value, meta):
+        return CodeElementCompoundVerifyNeq(a=value[0], b=value[1], location=self.meta2loc(meta))
 
     @v_args(meta=True)
     def inst_jmp_rel(self, meta, value):

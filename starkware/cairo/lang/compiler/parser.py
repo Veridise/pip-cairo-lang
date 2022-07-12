@@ -103,6 +103,7 @@ def wrap_lark_error(err: LarkError, input_file: InputFile) -> Exception:
             "AND": '"and"',
             "AS": '"as"',
             "ASSERT": '"assert"',
+            "VERIFY": '"verify"',
             "BUILTINS": '"%builtins"',
             "CALL": '"call"',
             "CAST": '"cast"',
