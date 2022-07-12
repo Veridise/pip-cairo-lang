@@ -5,6 +5,7 @@ from starkware.cairo.lang.compiler.ast.expr import (
     ExprNeg,
     ExprOperator,
     ExprReg,
+    ExprSymbolic,
 )
 from starkware.cairo.lang.compiler.ast.expr_func_call import ExprFuncCall
 
@@ -38,6 +39,9 @@ class ConstExprChecker:
 
     def visit_ExprFuncCall(self, expr: ExprFuncCall):
         return False
+
+    def visit_ExprSymbolic(self, expr: ExprSymbolic):
+        return self.visit(expr.tag)
 
 
 def is_const_expr(expr):
