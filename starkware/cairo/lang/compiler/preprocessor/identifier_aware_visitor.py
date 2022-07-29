@@ -39,6 +39,7 @@ class IdentifierAwareVisitor(Visitor):
         identifiers: Optional[IdentifierManager] = None,
         identifier_locations: Dict[ScopedName, Location] = None,
         accessible_scopes: Optional[List[ScopedName]] = None,
+        gen_stubs=False
     ):
         super().__init__(accessible_scopes=accessible_scopes)
         if identifiers is None:
@@ -47,6 +48,7 @@ class IdentifierAwareVisitor(Visitor):
             identifier_locations = {}
         self.identifiers = identifiers
         self.identifier_locations = identifier_locations
+        self.gen_stubs = gen_stubs
 
     def handle_missing_future_definition(self, name: ScopedName, location):
         raise PreprocessorError(
@@ -54,11 +56,11 @@ class IdentifierAwareVisitor(Visitor):
         )
 
     def add_name_definition(
-        self,
-        name: ScopedName,
-        identifier_definition: IdentifierDefinition,
-        location,
-        require_future_definition=True,
+            self,
+            name: ScopedName,
+            identifier_definition: IdentifierDefinition,
+            location,
+            require_future_definition=True,
     ):
         """
         Adds a definition of an identifier named 'name' at 'location'.
@@ -85,10 +87,10 @@ class IdentifierAwareVisitor(Visitor):
         self.identifier_locations[name] = location
 
     def get_identifier_definition(
-        self,
-        name: ScopedName,
-        supported_types: Tuple[Type[IdentifierDefinition], ...],
-        location: Optional[Location],
+            self,
+            name: ScopedName,
+            supported_types: Tuple[Type[IdentifierDefinition], ...],
+            location: Optional[Location],
     ) -> IdentifierDefinition:
         """
         Returns the definition that corresponds to the given identifier.
@@ -116,9 +118,9 @@ Expected '{res.canonical_name}' to be {possible_types}. Found: '{identifier_defi
         return identifier_definition
 
     def get_struct_definition(
-        self,
-        name: ScopedName,
-        location: Optional[Location],
+            self,
+            name: ScopedName,
+            location: Optional[Location],
     ) -> StructDefinition:
         """
         Returns the struct definition that corresponds to the given identifier.
@@ -131,9 +133,9 @@ Expected '{res.canonical_name}' to be {possible_types}. Found: '{identifier_defi
         return res
 
     def get_type_definition(
-        self,
-        name: ScopedName,
-        location: Optional[Location],
+            self,
+            name: ScopedName,
+            location: Optional[Location],
     ) -> TypeDefinition:
         """
         Returns the type definition that corresponds to the given identifier.
@@ -186,10 +188,10 @@ Expected '{res.canonical_name}' to be {possible_types}. Found: '{identifier_defi
             return None
 
     def verify_possibly_future_struct(
-        self,
-        identifier_definition: IdentifierDefinition,
-        scoped_name: ScopedName,
-        location: Optional[Location],
+            self,
+            identifier_definition: IdentifierDefinition,
+            scoped_name: ScopedName,
+            location: Optional[Location],
     ):
         """
         Checks that the given IdentifierSearchResult represents a struct.
@@ -234,8 +236,8 @@ Expected '{scoped_name}' to be a {StructDefinition.TYPE}. Found: '{identifier_ty
                     return TypeFunction(scope=result.get_canonical_name())
 
                 if (
-                    isinstance(result.identifier_definition, FutureIdentifierDefinition)
-                    and result.identifier_definition.identifier_type is TypeDefinition
+                        isinstance(result.identifier_definition, FutureIdentifierDefinition)
+                        and result.identifier_definition.identifier_type is TypeDefinition
                 ):
                     raise PreprocessorError(
                         "Cannot use a type before its definition.", location=cairo_type.location
