@@ -29,6 +29,7 @@ def starknet_pass_manager(
     read_module: Callable[[str], Tuple[str, str]],
     opt_unused_functions: bool = True,
     disable_hint_validation: bool = False,
+    gen_stubs: bool = False,
 ) -> PassManager:
     hint_whitelist = None if disable_hint_validation else get_hints_whitelist()
     manager = default_pass_manager(
@@ -102,7 +103,7 @@ def starknet_pass_manager(
         existing_stage="struct_collector",
         new_stage_name="storage_var_implementation",
         new_stage=VisitorStage(
-            lambda context: StorageVarImplementationVisitor(identifiers=context.identifiers),
+            lambda context: StorageVarImplementationVisitor(identifiers=context.identifiers, gen_stubs=gen_stubs),
             modify_ast=True,
         ),
     )

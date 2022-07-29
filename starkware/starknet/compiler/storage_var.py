@@ -134,7 +134,7 @@ namespace {var_name} {{
     res = parse(
         autogen_filename, res.format(get_max_line_length()), "code_element", CodeElementFunction
     )
-
+    print(f'STORAGE VAR CODE BLOCK: {res.code_block.format(80)}')
     res.additional_attributes[STORAGE_VAR_ATTR] = elm
 
     return res
@@ -239,6 +239,96 @@ tempvar range_check_ptr = range_check_ptr;
         is_impl=True,
     )
 
+def process_storage_var2(visitor: IdentifierAwareVisitor, elm: CodeElementFunction):
+    verify_empty_code_block(
+        code_block=elm.code_block,
+        error_message="Storage variables must have an empty body.",
+        default_location=elm.identifier.location,
+    )
+    verify_no_implicit_arguments(elm=elm, name_in_error_message="Storage variables")
+    verify_decorators(
+        elm=elm,
+        allowed_decorators=[STORAGE_VAR_DECORATOR],
+        name_in_error_message="a storage variable",
+    )
+
+    arg_sizes: List[int] = []
+    for arg in elm.arguments.identifiers:
+        if arg.identifier.name in FORBIDDEN_ARGUMENT_NAMES:
+            raise PreprocessorError(
+                f"'{arg.identifier.name}' cannot be used as a storage variable argument name.",
+                location=arg.identifier.location,
+            )
+        unresolved_arg_type = arg.get_type()
+        arg_type = visitor.resolve_type(unresolved_arg_type)
+        arg_size = check_felts_only_type(
+            cairo_type=arg_type, identifier_manager=visitor.identifiers
+        )
+        if arg_size is None:
+            raise PreprocessorError(
+                "Arguments of storage variables must be a felts-only type "
+                "(cannot contain pointers).",
+                location=unresolved_arg_type.location,
+            )
+        arg_sizes.append(arg_size)
+
+    unresolved_return_type = get_return_type(elm=elm)
+    return_type = visitor.resolve_type(unresolved_return_type)
+    if (
+        check_felts_only_type(cairo_type=return_type, identifier_manager=visitor.identifiers)
+        is None
+    ):
+        raise PreprocessorError(
+            "The return type of storage variables must be a felts-only type "
+            "(cannot contain pointers).",
+            location=elm.returns.location if elm.returns is not None else elm.identifier.location,
+        )
+    var_size = visitor.get_size(return_type)
+
+    if var_size > MAX_STORAGE_ITEM_SIZE:
+        raise PreprocessorError(
+            f"The storage variable size ({var_size}) exceeds the maximum value "
+            f"({MAX_STORAGE_ITEM_SIZE}).",
+            location=elm.returns.location if elm.returns is not None else elm.identifier.location,
+        )
+
+    var_name = elm.identifier.name
+    addr = storage_var_name_to_base_addr(var_name)
+    addr_func_body = f"let res = {addr}\n"
+    for arg, arg_size in safe_zip(elm.arguments.identifiers, arg_sizes):
+        assert arg_size is not None
+        for i in range(arg_size):
+            value_str = f"cast(&{arg.identifier.name}, felt*)[{i}]"
+            addr_func_body += f"let (res) = hash2{{hash_ptr=pedersen_ptr}}(res, {value_str})\n"
+    if len(elm.arguments.identifiers) > 0:
+        addr_func_body += "let (res) = normalize_address(addr=res)\n"
+    addr_func_body += "return (res=res)\n"
+
+    args = ", ".join(arg.identifier.name for arg in elm.arguments.identifiers)
+
+    read_func_body = f"let storage_addr = 0\n"
+    #read_func_body += """
+    #tempvar syscall_ptr = syscall_ptr
+    #tempvar pedersen_ptr = pedersen_ptr
+    #tempvar range_check_ptr = range_check_ptr
+    #"""
+    for i in range(var_size):
+        read_func_body += f"tempvar __storage_var_temp{i} : felt = 0\n"
+    unresolved_return_type_ptr = TypePointer(pointee=unresolved_return_type)
+    read_func_body += (
+        f"return ([cast(&__storage_var_temp0, {unresolved_return_type_ptr.format()})],)"
+    )
+
+   # write_func_body = f"let (storage_addr) = 0\n"
+    write_func_body = "return ()\n"
+    return generate_storage_var_functions(
+        elm,
+        addr_func_body=addr_func_body,
+        read_func_body=read_func_body,
+        write_func_body=write_func_body,
+        is_impl=True,
+    )
+
 
 def storage_var_name_to_base_addr(var_name: str) -> int:
     """
@@ -329,7 +419,6 @@ class StorageVarImplementationVisitor(IdentifierAwareVisitor):
     STORAGE_VAR_ATTR added by StorageVarDeclVisitor) with a namespace with read() and write()
     functions.
     """
-
     def _visit_default(self, obj):
         return obj
 
@@ -339,4 +428,7 @@ class StorageVarImplementationVisitor(IdentifierAwareVisitor):
             return elm
 
         assert isinstance(attr, CodeElementFunction)
-        return process_storage_var(self, attr)
+        if self.gen_stubs:
+            return process_storage_var2(self, attr)
+        else:
+            return process_storage_var(self, attr)
