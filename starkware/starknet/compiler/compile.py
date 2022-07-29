@@ -178,6 +178,8 @@ def assemble_starknet_contract(
 def main():
     parser = argparse.ArgumentParser(description="A tool to compile StarkNet contracts.")
     parser.add_argument("--abi", type=argparse.FileType("w"), help="Output the contract's ABI.")
+    parser.add_argument("--gen_stubs", action="store_true", help="Generate Stub implementations for storage "
+                                                                      "read/write.")
     parser.add_argument(
         "--disable_hint_validation", action="store_true", help="Disable the hint validation."
     )
@@ -200,6 +202,7 @@ def main():
             prime=args.prime,
             read_module=module_reader.read,
             disable_hint_validation=args.disable_hint_validation,
+            gen_stubs=args.gen_stubs,
         )
 
     try:
