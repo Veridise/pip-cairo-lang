@@ -134,7 +134,6 @@ namespace {var_name} {{
     res = parse(
         autogen_filename, res.format(get_max_line_length()), "code_element", CodeElementFunction
     )
-    print(f'STORAGE VAR CODE BLOCK: {res.code_block.format(80)}')
     res.additional_attributes[STORAGE_VAR_ATTR] = elm
 
     return res
