@@ -1339,8 +1339,6 @@ Expected 'elm.element_type' to be a 'namespace'. Found: '{elm.element_type}'."""
             ap_diff = self.flow_tracking.get_ap_tracking() - original_ap_tracking
             dst = self.simplifier.visit(translate_ap(dst, ap_diff))
             src = self.simplifier.visit(translate_ap(src, ap_diff))
-            print(dst)
-            print(src)
             (expr_a, expr_b) = process_compound_assert(dst, src, self._compound_expression_context)
             verify_geq = CodeElementInstruction(
                 instruction=InstructionAst(
@@ -1375,8 +1373,6 @@ Expected 'elm.element_type' to be a 'namespace'. Found: '{elm.element_type}'."""
             ap_diff = self.flow_tracking.get_ap_tracking() - original_ap_tracking
             dst = self.simplifier.visit(translate_ap(dst, ap_diff))
             src = self.simplifier.visit(translate_ap(src, ap_diff))
-            print(dst)
-            print(src)
             (expr_a, expr_b) = process_compound_assert(dst, src, self._compound_expression_context)
             verify_lt = CodeElementInstruction(
                 instruction=InstructionAst(
